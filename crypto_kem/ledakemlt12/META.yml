@@ -14,5 +14,7 @@ auxiliary-submitters:
   - Gerardo Pelosi
   - Paolo Santini
 implementations:
+  - name: clean
+    version: 2.?
   - name: leaktime
     version: 2.?
