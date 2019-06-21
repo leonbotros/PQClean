@@ -13,14 +13,9 @@ uint8_t PQCLEAN_LEDAKEMLT52_LEAKTIME_DFR_test(POSITION_T LSparse[N0][DV * M]) {
 
     POSITION_T LSparse_loc[N0][DV * M];
     POSITION_T rotated_column[DV * M];
-    /* Gamma matrix: an N0 x N0 block circulant matrix with block size p
-     * gamma[a][b][c] stores the intersection of the first column of the a-th
-     * block of L  with the c-th column of the b-th block of L.
-     * Gamma computation can be accelerated employing symmetry and QC properties */
-    unsigned int gamma[N0][N0][P] = {{{0}}};
     unsigned int gammaHist[N0][DV * M + 1] = {{0}};
     unsigned int maxMut[N0], maxMutMinusOne[N0];
-    unsigned int firstidx, secondidx, intersectionval;
+    uint8_t firstidx, secondidx, intersectionval; // all smaller than DV * M < MAX_UINT8_T
     unsigned int allBlockMaxSumst, allBlockMaxSumstMinusOne;
     unsigned int toAdd, histIdx;
 
@@ -36,7 +31,8 @@ uint8_t PQCLEAN_LEDAKEMLT52_LEAKTIME_DFR_test(POSITION_T LSparse[N0][DV * M]) {
 
     for (int i = 0; i < N0; i++ ) {
         for (int j = 0; j < N0; j++ ) {
-            for (int k = 0; k < P; k++) {
+            gammaHist[i][0]++;
+            for (int k = 1; k < P; k++) {
                 /* compute the rotated sparse column needed */
                 for (int idxToRotate = 0; idxToRotate < (DV * M); idxToRotate++) {
                     rotated_column[idxToRotate] = (LSparse_loc[j][idxToRotate] + k) % P;
@@ -56,25 +52,10 @@ uint8_t PQCLEAN_LEDAKEMLT52_LEAKTIME_DFR_test(POSITION_T LSparse[N0][DV * M]) {
                         firstidx++;
                     }
                 }
-                gamma[i][j][k] = intersectionval;
-
+                gammaHist[i][intersectionval]++;
             }
         }
     }
-    for (int i = 0; i < N0; i++ ) {
-        for (int j = 0; j < N0; j++ ) {
-            gamma[i][j][0] = 0;
-        }
-    }
-    /* build histogram of values in gamma */
-    for (int i = 0; i < N0; i++ ) {
-        for (int j = 0; j < N0; j++ ) {
-            for (int k = 0; k < P; k++) {
-                gammaHist[i][gamma[i][j][k]]++;
-            }
-        }
-    }
-
 
     for (int gammaBlockRowIdx = 0; gammaBlockRowIdx < N0; gammaBlockRowIdx++) {
         toAdd = T_BAR - 1;
