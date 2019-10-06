@@ -19,7 +19,7 @@ int PQCLEAN_LEDAKEMLT32_LEAKTIME_bf_decoding(DIGIT err[],
     int iteration = 0;
 
     do {
-        PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_copy(currSyndrome, privateSyndrome);
+        PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_copy(currSyndrome, privateSyndrome, NUM_DIGITS_GF2X_ELEMENT);
         memset(unsatParityChecks, 0x00, N0 * P * sizeof(uint8_t));
         for (size_t i = 0; i < N0; i++) {
             for (POSITION_T valueIdx = 0; valueIdx < P; valueIdx++) {

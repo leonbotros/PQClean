@@ -18,11 +18,13 @@ void PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_cmov(DIGIT *r, const DIGIT *a, size_t len
 
 /* PRE: MAX ALLOWED ROTATION AMOUNT : DIGIT_SIZE_b */
 void PQCLEAN_LEDAKEMLT32_LEAKTIME_right_bit_shift_n(size_t length, DIGIT in[], size_t amount) {
-    if ( amount == 0 ) {
-        return;
-    }
     size_t j;
     DIGIT mask;
+
+    if (amount == 0) {
+        return;
+    }
+
     mask = ((DIGIT)0x01 << amount) - 1;
     for (j = length - 1; j > 0; j--) {
         in[j] >>= amount;
@@ -33,11 +35,13 @@ void PQCLEAN_LEDAKEMLT32_LEAKTIME_right_bit_shift_n(size_t length, DIGIT in[], s
 
 /* PRE: MAX ALLOWED ROTATION AMOUNT : DIGIT_SIZE_b */
 void PQCLEAN_LEDAKEMLT32_LEAKTIME_left_bit_shift_n(size_t length, DIGIT in[], size_t amount) {
-    if ( amount == 0 ) {
-        return;
-    }
     size_t j;
     DIGIT mask;
+
+    if (amount == 0) {
+        return;
+    }
+
     mask = ~(((DIGIT)0x01 << (DIGIT_SIZE_b - amount)) - 1);
     for (j = 0 ; j < length - 1; j++) {
         in[j] <<= amount;

@@ -43,10 +43,11 @@
  *           position[A_{0}]  ==  n-1
  */
 
-typedef uint64_t DIGIT;
-#define DIGIT_SIZE_B (8)
-#define DIGIT_SIZE_b (DIGIT_SIZE_B << 3)
-#define POSITION_T uint32_t
+typedef uint64_t            DIGIT;
+#define DIGIT_SIZE_B        (8)
+#define DIGIT_SIZE_b        (DIGIT_SIZE_B << 3)
+#define LOG_DIGIT_SIZE_b    (6)
+#define POSITION_T          uint32_t
 
 #define MIN_KAR_DIGITS      10
 #define MIN_TOOM_DIGITS     42

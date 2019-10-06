@@ -4,8 +4,8 @@
 
 #include <string.h>  // memcpy(...), memset(...)
 
-void PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_copy(DIGIT dest[], const DIGIT in[]) {
-    for (size_t i = 0; i < NUM_DIGITS_GF2X_ELEMENT; i++) {
+void PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_copy(DIGIT dest[], const DIGIT in[], size_t len) {
+    for (size_t i = 0; i < len; i++) {
         dest[i] = in[i];
     }
 }
@@ -81,24 +81,6 @@ static void right_bit_shift(size_t length, DIGIT in[]) {
         in[j] |=  (in[j - 1] & (DIGIT)0x01) << (DIGIT_SIZE_b - 1);
     }
     in[j] >>= 1;
-}
-
-
-/* shifts by whole digits */
-static void left_DIGIT_shift_n(size_t length, DIGIT in[], size_t amount) {
-    size_t j;
-    for (j = 0; (j + amount) < length; j++) {
-        in[j] = in[j + amount];
-    }
-    for (; j < length; j++) {
-        in[j] = (DIGIT)0;
-    }
-}
-
-/* may shift by an arbitrary amount*/
-static void left_bit_shift_wide_n(size_t length, DIGIT in[], size_t amount) {
-    left_DIGIT_shift_n(length, in, amount / DIGIT_SIZE_b);
-    PQCLEAN_LEDAKEMLT32_LEAKTIME_left_bit_shift_n(length, in, amount % DIGIT_SIZE_b);
 }
 
 /* Hackers delight, reverses a uint64_t */
@@ -235,38 +217,66 @@ int PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_mod_inverse(DIGIT out[], const DIGIT in[])
 }
 
 void PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_mod_mul(DIGIT Res[], const DIGIT A[], const DIGIT B[]) {
-
     DIGIT aux[2 * NUM_DIGITS_GF2X_ELEMENT];
+
     PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_mul(aux, A, B, NUM_DIGITS_GF2X_ELEMENT);
     gf2x_mod(Res, aux);
 
 }
 
-/*PRE: the representation of the sparse coefficients is sorted in increasing
- order of the coefficients themselves */
-void PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_mod_mul_dense_to_sparse(DIGIT Res[], const DIGIT dense[],
-        POSITION_T sparse[], size_t nPos) {
+/* constant-time sparse-dense multiplication
+ * assumes no INVALID_POS in sparse, does not require
+ * sorted sparse representaton */
+void PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_mod_mul_dense_to_sparse(DIGIT *R, const DIGIT *dense,
+        const POSITION_T *sparse, size_t n) {
+    DIGIT tmpR[RLEN];
+    DIGIT p0[RLEN];
+    DIGIT p1[RLEN];
+    DIGIT *v = p0;
+    DIGIT *w = p1;
+    DIGIT *ptr;
+    size_t s, ds, ids;  // total shift, digit_shift and indigit_shift
+    size_t i, j;
+    int8_t b;           // bit position in pos in binary representation of index
+    DIGIT mask;
 
-    DIGIT aux[2 * NUM_DIGITS_GF2X_ELEMENT] = {0x00};
-    DIGIT resDouble[2 * NUM_DIGITS_GF2X_ELEMENT] = {0x00};
-    memcpy(aux + NUM_DIGITS_GF2X_ELEMENT, dense, NUM_DIGITS_GF2X_ELEMENT * DIGIT_SIZE_B);
-    memcpy(resDouble + NUM_DIGITS_GF2X_ELEMENT, dense, NUM_DIGITS_GF2X_ELEMENT * DIGIT_SIZE_B);
+    for (i = 0; i < n; i++) {
+        s = sparse[i];
 
-    if (sparse[0] != INVALID_POS_VALUE) {
-        left_bit_shift_wide_n(2 * NUM_DIGITS_GF2X_ELEMENT, resDouble, sparse[0]);
-        left_bit_shift_wide_n(2 * NUM_DIGITS_GF2X_ELEMENT, aux, sparse[0]);
+        for (j = 0; j < NUM_DIGITS_GF2X_ELEMENT; j++) {
+            w[j] = 0;
+            w[NUM_DIGITS_GF2X_ELEMENT + j] = dense[j];
+        }
 
-        for (size_t i = 1; i < nPos; i++) {
-            if (sparse[i] != INVALID_POS_VALUE) {
-                left_bit_shift_wide_n(2 * NUM_DIGITS_GF2X_ELEMENT, aux, (sparse[i] - sparse[i - 1]) );
-                PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_add(resDouble, aux, resDouble, 2 * NUM_DIGITS_GF2X_ELEMENT);
+        for (b = P_BITS - 1; b >= LOG_DIGIT_SIZE_b; b--) {
+            ptr = v;
+            v = w;
+            w = ptr; // use output of last loop as input of next loop
+
+            mask = (DIGIT) - ((s >> b) & 1);    // all-zero or all-one depending on bit
+            ds = 1 << (b - LOG_DIGIT_SIZE_b);   // 2^b / 2^5 = 2^(b-5) number of digits to rotate
+
+            for (j = 0; j < RLEN - ds; j++) {
+                w[j] = (v[j + ds] & mask) ^ (v[j] & ~mask);
             }
+            for (; j < RLEN; j++) {
+                w[j] = (((v[j + ds - RLEN] << TAIL) | (v[j + ds - RLEN + 1] >> (DIGIT_SIZE_b - TAIL))) & mask) ^ (v[j] & ~mask);
+            }
+        }
+
+        ids = s & ((1 << LOG_DIGIT_SIZE_b) - 1); // ids = 0 .. 31
+        PQCLEAN_LEDAKEMLT32_LEAKTIME_left_bit_shift_n(RLEN, w, ids); // shift inside digits by ids
+
+        if (i == 0) {
+            PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_copy(tmpR, w, RLEN);
+        } else {
+            PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_add(tmpR, tmpR, w, RLEN);
         }
     }
 
-    gf2x_mod(Res, resDouble);
-
+    gf2x_mod(R, tmpR);
 }
+
 
 void PQCLEAN_LEDAKEMLT32_LEAKTIME_gf2x_transpose_in_place_sparse(size_t sizeA, POSITION_T A[]) {
     POSITION_T t;

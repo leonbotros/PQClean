@@ -15,7 +15,11 @@
 #define INVALID_POS_VALUE                       (P)
 #define P_BITS                                  (16) // log_2(p) = 15.6703
 
-void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_copy(DIGIT dest[], const DIGIT in[]);
+#define TAIL                                    (P % DIGIT_SIZE_b)
+#define TAIL_MASK                               ((1 << TAIL) - 1)
+#define RLEN                                    (NUM_DIGITS_GF2X_ELEMENT << 1)
+
+void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_copy(DIGIT dest[], const DIGIT in[], size_t len);
 DIGIT PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_get_coeff(const DIGIT poly[], size_t exponent);
 void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_set_coeff(DIGIT poly[], size_t exponent, DIGIT value);
 void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_toggle_coeff(DIGIT poly[], size_t exponent);
@@ -31,7 +35,7 @@ void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_mod_add_sparse(size_t sizeR, POSITION_T R
 void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_transpose_in_place_sparse(size_t sizeA, POSITION_T A[]);
 int PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_mod_inverse(DIGIT out[], const DIGIT in[]);
 void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_mod_mul_sparse(size_t sizeR, POSITION_T Res[], size_t sizeA,  const POSITION_T A[], size_t sizeB, const POSITION_T B[]);
-void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_mod_mul_dense_to_sparse(DIGIT Res[], const DIGIT dense[], POSITION_T sparse[], size_t nPos);
+void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_mod_mul_dense_to_sparse(DIGIT *R, const DIGIT *dense, const POSITION_T *sparse, size_t n);
 void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_tobytes(uint8_t *bytes, const DIGIT *poly);
 void PQCLEAN_LEDAKEMLT12_LEAKTIME_gf2x_frombytes(DIGIT *poly, const uint8_t *poly_bytes);
 
